@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card-grid">
+  <div class="card"><div class="label">创作者</div><div class="value">{{ summary.creators }}</div></div>
+  <div class="card"><div class="label">动态</div><div class="value">{{ summary.dynamics }}</div></div>
+  <div class="card"><div class="label">评论</div><div class="value">{{ summary.comments }}</div></div>
+  <div class="card"><div class="label">视频</div><div class="value">{{ summary.videos }}</div></div>
+  <div class="card"><div class="label">待下载</div><div class="value">{{ summary.download_pending }}</div></div>
+  <div class="card"><div class="label">下载中</div><div class="value">{{ summary.download_running }}</div></div>
+  <div class="card"><div class="label">失败任务</div><div class="value">{{ summary.download_failed }}</div></div>
+  <div class="card"><div class="label">成功任务</div><div class="value">{{ summary.download_success }}</div></div>
+</div>
+
+<div class="panel">
+  <h2>最近运行</h2>
+  {% if summary.latest_run %}
+    <pre>{{ summary.latest_run }}</pre>
+  {% else %}
+    <p>暂无运行记录</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -5,6 +5,10 @@ description = "Personal archive tool for Bilibili authorized charge dynamics/com
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+  "python-multipart>=0.0.9",
+  "jinja2>=3.1.4",
+  "uvicorn[standard]>=0.30.0",
+  "fastapi>=0.115.0",
   "playwright>=1.51.0",
   "httpx[http2]>=0.27.0",
   "pydantic>=2.8.0",

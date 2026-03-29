@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="panel">
+  <form method="get" class="filters">
+    <input type="text" name="status" placeholder="状态" value="{{ filters.status or '' }}">
+    <input type="text" name="bvid" placeholder="BVID" value="{{ filters.bvid or '' }}">
+    <input type="text" name="uid" placeholder="来源 UID" value="{{ filters.uid or '' }}">
+    <button type="submit">筛选</button>
+  </form>
+
+  <div class="actions">
+    <label><input type="checkbox" id="auto-refresh" checked> 自动刷新</label>
+  </div>
+
+  <table class="table" id="downloads-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>BVID</th>
+        <th>状态</th>
+        <th>优先级</th>
+        <th>重试</th>
+        <th>来源 UID</th>
+        <th>文件路径</th>
+        <th>错误</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr data-task-id="{{ item.id }}">
+        <td>{{ item.id }}</td>
+        <td>{{ item.bvid }}</td>
+        <td>{{ item.status }}</td>
+        <td>{{ item.priority }}</td>
+        <td>{{ item.retry_count }}</td>
+        <td>{{ item.source_uid if item.source_uid is defined else '-' }}</td>
+        <td class="text-wrap">{{ item.file_path or '-' }}</td>
+        <td class="text-wrap">{{ item.error_message or '-' }}</td>
+        <td>
+          <button class="retry-btn" data-task-id="{{ item.id }}">重试</button>
+          <button class="cancel-btn" data-task-id="{{ item.id }}">取消</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pager">
+    <span>第 {{ meta.page }} / {{ meta.total_pages }} 页</span>
+    <span>共 {{ meta.total }} 条</span>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/downloads.js') }}"></script>
+{% endblock %}

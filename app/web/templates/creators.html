@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="panel">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>名称</th>
+        <th>主页</th>
+        <th>创建时间</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in creators %}
+      <tr>
+        <td>{{ item.uid }}</td>
+        <td>{{ item.name or "-" }}</td>
+        <td>{{ item.homepage_url or "-" }}</td>
+        <td>{{ item.created_at or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

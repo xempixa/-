@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="panel">
+  <form method="get" class="filters">
+    <input type="text" name="uid" placeholder="UID" value="{{ filters.uid or '' }}">
+    <input type="text" name="keyword" placeholder="标题/描述关键词" value="{{ filters.keyword or '' }}">
+    <select name="charge_only">
+      <option value="">全部</option>
+      <option value="true" {% if filters.charge_only == true %}selected{% endif %}>仅充电</option>
+      <option value="false" {% if filters.charge_only == false %}selected{% endif %}>非充电</option>
+    </select>
+    <button type="submit">筛选</button>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>BVID</th>
+        <th>UID</th>
+        <th>标题</th>
+        <th>时长</th>
+        <th>充电专属</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.bvid }}</td>
+        <td>{{ item.uid }}</td>
+        <td class="text-wrap">{{ item.title or "-" }}</td>
+        <td>{{ item.duration_seconds or "-" }}</td>
+        <td>{{ "是" if item.is_charge_only else "否" }}</td>
+        <td>
+          <button class="enqueue-btn" data-bvid="{{ item.bvid }}" data-uid="{{ item.uid }}">加入下载队列</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pager">
+    <span>第 {{ meta.page }} / {{ meta.total_pages }} 页</span>
+    <span>共 {{ meta.total }} 条</span>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.enqueue-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const payload = {
+      bvid: btn.dataset.bvid,
+      priority: 100,
+      source_uid: btn.dataset.uid ? Number(btn.dataset.uid) : null,
+    };
+    const resp = await fetch('/api/downloads/enqueue', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    alert(data.message || 'done');
+  });
+});
+</script>
+{% endblock %}

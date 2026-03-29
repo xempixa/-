@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="panel">
+  <form method="get" class="filters">
+    <input type="text" name="uid" placeholder="UID" value="{{ filters.uid or '' }}">
+    <input type="text" name="keyword" placeholder="关键词" value="{{ filters.keyword or '' }}">
+    <button type="submit">筛选</button>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>UID</th>
+        <th>类型</th>
+        <th>内容</th>
+        <th>最后见到时间</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.dynamic_id }}</td>
+        <td>{{ item.uid }}</td>
+        <td>{{ item.dynamic_type or "-" }}</td>
+        <td class="text-wrap">{{ item.content_text or "-" }}</td>
+        <td>{{ item.last_seen_at or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pager">
+    <span>第 {{ meta.page }} / {{ meta.total_pages }} 页</span>
+    <span>共 {{ meta.total }} 条</span>
+  </div>
+</div>
+{% endblock %}

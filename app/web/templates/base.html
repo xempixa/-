@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title or "Bili Charge Archiver Panel" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/app.css') }}" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Bili Archiver</div>
+      <nav>
+        <a href="/">仪表盘</a>
+        <a href="/creators">创作者</a>
+        <a href="/dynamics">动态</a>
+        <a href="/videos">视频</a>
+        <a href="/downloads">下载任务</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="page-header">
+        <h1>{{ page_title }}</h1>
+      </header>
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
