@@ -70,9 +70,23 @@ class DownloadTask(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     bvid: Mapped[str] = mapped_column(String(32), index=True)
     url: Mapped[str] = mapped_column(String(1024))
-    status: Mapped[str] = mapped_column(String(32), default="pending")
+    status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100)
     file_path: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
+    max_retries: Mapped[int] = mapped_column(Integer, default=3)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SyncCheckpoint(Base):
+    __tablename__ = "sync_checkpoints"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    scope: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    cursor: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    last_item_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

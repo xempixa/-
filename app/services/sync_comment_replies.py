@@ -5,23 +5,32 @@ from loguru import logger
 from app.clients.bili_api import BiliApiClient
 from app.db.repo import CommentRepo
 from app.db.session import AsyncSessionLocal
-from app.services.sync_comment_replies import sync_comment_replies
 
 
-async def sync_comments(dynamic_id: str, max_pages: int = 3, fetch_replies: bool = True) -> None:
+async def sync_comment_replies(
+    dynamic_id: str,
+    root_comment_id: str,
+    max_pages: int = 10,
+) -> None:
     client = BiliApiClient()
 
     try:
         async with AsyncSessionLocal() as session:
             for page in range(1, max_pages + 1):
-                data = await client.get_dynamic_comments(dynamic_id=dynamic_id, page=page)
+                data = await client.get_dynamic_comments(
+                    dynamic_id=dynamic_id,
+                    page=page,
+                    page_size=20,
+                    root=root_comment_id,
+                )
+
                 replies = data.get("replies", [])
-                logger.info(f"dynamic_id={dynamic_id} 第 {page} 页一级评论数: {len(replies)}")
+                logger.info(
+                    f"dynamic_id={dynamic_id} root={root_comment_id} 第{page}页二级回复数={len(replies)}"
+                )
 
                 if not replies:
                     break
-
-                roots_to_expand: list[str] = []
 
                 for reply in replies:
                     comment_id = str(reply.get("rpid") or reply.get("comment_id") or "")
@@ -31,7 +40,7 @@ async def sync_comments(dynamic_id: str, max_pages: int = 3, fetch_replies: bool
                     payload = {
                         "comment_id": comment_id,
                         "dynamic_id": dynamic_id,
-                        "root_comment_id": str(reply.get("root") or comment_id),
+                        "root_comment_id": str(reply.get("root") or root_comment_id),
                         "parent_id": str(reply.get("parent") or "") or None,
                         "user_name": ((reply.get("member") or {}).get("uname")),
                         "content": ((reply.get("content") or {}).get("message"))
@@ -39,24 +48,9 @@ async def sync_comments(dynamic_id: str, max_pages: int = 3, fetch_replies: bool
                         "like_count": int(reply.get("like") or 0),
                         "raw_json": client.dumps(reply),
                     }
-
                     await CommentRepo.upsert(session, payload)
-
-                    reply_count = int(reply.get("rcount") or reply.get("reply_count") or 0)
-                    if fetch_replies and reply_count > 0:
-                        roots_to_expand.append(comment_id)
 
                 await session.commit()
 
-                if fetch_replies:
-                    for root_comment_id in roots_to_expand:
-                        await sync_comment_replies(
-                            dynamic_id=dynamic_id,
-                            root_comment_id=root_comment_id,
-                        )
-
-    except Exception as exc:
-        logger.exception(f"同步评论失败: {exc}")
-        raise
     finally:
         await client.aclose()
