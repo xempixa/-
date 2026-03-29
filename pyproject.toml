@@ -1,0 +1,31 @@
+[project]
+name = "bili-charge-archiver"
+version = "0.1.0"
+description = "Personal archive tool for Bilibili authorized charge dynamics/comments/videos"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "playwright>=1.51.0",
+  "httpx[http2]>=0.27.0",
+  "pydantic>=2.8.0",
+  "pydantic-settings>=2.3.0",
+  "sqlalchemy>=2.0.30",
+  "aiosqlite>=0.20.0",
+  "typer>=0.16.0",
+  "rich>=13.7.1",
+  "loguru>=0.7.2",
+  "tenacity>=9.0.0",
+  "orjson>=3.10.0",
+  "yt-dlp>=2025.1.0",
+]
+
+[project.scripts]
+bili-archiver = "app.main:app"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
