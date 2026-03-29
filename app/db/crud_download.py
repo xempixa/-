@@ -5,6 +5,13 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.download_status import (
+    DOWNLOAD_STATUS_FAILED,
+    DOWNLOAD_STATUS_PENDING,
+    DOWNLOAD_STATUS_RETRY_WAIT,
+    DOWNLOAD_STATUS_RUNNING,
+    DOWNLOAD_STATUS_SUCCESS,
+)
 from app.db.models import DownloadTask
 from app.utils.backoff import compute_next_retry_at
 
@@ -23,7 +30,7 @@ async def create_download_task(
         priority=priority,
         source_uid=source_uid,
         note=note,
-        status="pending",
+        status=DOWNLOAD_STATUS_PENDING,
     )
     session.add(obj)
     return obj
@@ -34,10 +41,11 @@ async def get_runnable_tasks(session: AsyncSession, limit: int = 5) -> list[Down
     result = await session.scalars(
         select(DownloadTask)
         .where(
+            DownloadTask.cancel_requested.is_(False),
             or_(
-                DownloadTask.status == "pending",
+                DownloadTask.status == DOWNLOAD_STATUS_PENDING,
                 and_(
-                    DownloadTask.status == "retry_wait",
+                    DownloadTask.status == DOWNLOAD_STATUS_RETRY_WAIT,
                     DownloadTask.next_retry_at.is_not(None),
                     DownloadTask.next_retry_at <= now,
                 ),
@@ -65,10 +73,11 @@ async def try_claim_task(
         update(DownloadTask)
         .where(
             DownloadTask.id == task_id,
+            DownloadTask.cancel_requested.is_(False),
             or_(
-                DownloadTask.status == "pending",
+                DownloadTask.status == DOWNLOAD_STATUS_PENDING,
                 and_(
-                    DownloadTask.status == "retry_wait",
+                    DownloadTask.status == DOWNLOAD_STATUS_RETRY_WAIT,
                     DownloadTask.next_retry_at.is_not(None),
                     DownloadTask.next_retry_at <= now,
                 ),
@@ -79,7 +88,7 @@ async def try_claim_task(
             ),
         )
         .values(
-            status="running",
+            status=DOWNLOAD_STATUS_RUNNING,
             last_run_at=now,
             updated_at=now,
             locked_by=worker_id,
@@ -89,25 +98,12 @@ async def try_claim_task(
     return result.rowcount == 1
 
 
-async def mark_task_running(
-    session: AsyncSession,
-    task: DownloadTask,
-    worker_id: str | None = None,
-    lock_ttl_seconds: int = 600,
-) -> None:
-    task.status = "running"
-    task.last_run_at = datetime.utcnow()
-    task.updated_at = datetime.utcnow()
-    task.locked_by = worker_id
-    task.lock_expire_at = datetime.utcnow() + timedelta(seconds=lock_ttl_seconds)
-
-
 async def mark_task_success(
     session: AsyncSession,
     task: DownloadTask,
     file_path: str | None = None,
 ) -> None:
-    task.status = "success"
+    task.status = DOWNLOAD_STATUS_SUCCESS
     task.file_path = file_path
     task.finished_at = datetime.utcnow()
     task.updated_at = datetime.utcnow()
@@ -132,11 +128,11 @@ async def mark_task_retry(
     task.lock_expire_at = None
 
     if task.retry_count >= task.max_retries:
-        task.status = "failed"
+        task.status = DOWNLOAD_STATUS_FAILED
         task.finished_at = datetime.utcnow()
         task.next_retry_at = None
     else:
-        task.status = "retry_wait"
+        task.status = DOWNLOAD_STATUS_RETRY_WAIT
         task.next_retry_at = compute_next_retry_at(
             retry_count=task.retry_count,
             base_delay_seconds=base_delay_seconds,

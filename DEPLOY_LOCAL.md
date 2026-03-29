@@ -59,7 +59,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\stop_stack.ps1
 
 ## 验收建议
 
-- CLI 基础命令可执行
+- `scripts/acceptance_smoke.ps1` 可执行
 - Web `/api/health` 正常返回
 - 入队任务状态从 `pending` -> `running/success/retry_wait`
 - 导出报表命令可执行

@@ -47,10 +47,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\healthcheck.ps1
 ## 6. 最小验收命令
 
 ```powershell
-.\.venv\Scripts\bili-archiver.exe healthcheck
-.\.venv\Scripts\bili-archiver.exe enqueue-download --bvid BV1xx411c7mD
-.\.venv\Scripts\bili-archiver.exe run-download-queue --batch-size 1
-.\.venv\Scripts\bili-archiver.exe export-reports --report-dir .\reports
+powershell -ExecutionPolicy Bypass -File .\scripts\acceptance_smoke.ps1
 ```
 
 > 若缺少真实 cookie / 私有接口参数 / 浏览器环境，下载与部分同步需人工补环境验证。

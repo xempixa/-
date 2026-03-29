@@ -7,8 +7,12 @@ New-Item -ItemType Directory -Path ".\data\locks" -Force | Out-Null
 
 if (Test-Path $stopPath) { Remove-Item $stopPath -Force }
 if (Test-Path $lockPath) {
-    Write-Host "download worker loop 已在运行，锁文件存在: $lockPath"
-    exit 1
+    $lastPid = Get-Content $lockPath -ErrorAction SilentlyContinue
+    if ($lastPid -and (Get-Process -Id $lastPid -ErrorAction SilentlyContinue)) {
+        Write-Host "download worker loop 已在运行，锁文件存在: $lockPath pid=$lastPid"
+        exit 1
+    }
+    Remove-Item $lockPath -Force
 }
 
 Set-Content -Path $lockPath -Value $PID -Encoding UTF8

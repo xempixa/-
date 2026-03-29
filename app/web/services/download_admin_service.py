@@ -6,8 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.crud_download import create_download_task
-from app.utils.bvid import is_valid_bvid, normalize_bvid
+from app.db.download_status import DOWNLOAD_STATUS_ACTIVE_DEDUP, DOWNLOAD_STATUS_RETRYABLE
 from app.db.models import DownloadTask
+from app.utils.bvid import is_valid_bvid, normalize_bvid
 
 
 class DownloadAdminService:
@@ -26,7 +27,7 @@ class DownloadAdminService:
         existing = await session.scalar(
             select(DownloadTask).where(
                 DownloadTask.bvid == bvid,
-                DownloadTask.status.in_(["pending", "running", "retry_wait", "success"]),
+                DownloadTask.status.in_(sorted(DOWNLOAD_STATUS_ACTIVE_DEDUP)),
             )
         )
         if existing:
@@ -52,7 +53,7 @@ class DownloadAdminService:
         task = await session.get(DownloadTask, task_id)
         if not task:
             return False, "task not found"
-        if task.status not in {"failed", "retry_wait", "skipped"}:
+        if task.status not in DOWNLOAD_STATUS_RETRYABLE:
             return False, f"status {task.status} not retryable"
 
         task.status = "pending"
@@ -62,6 +63,8 @@ class DownloadAdminService:
         task.updated_at = datetime.utcnow()
         task.cancel_requested = False
         task.manual_retry_count = (task.manual_retry_count or 0) + 1
+        task.locked_by = None
+        task.lock_expire_at = None
         if reset_retry_count:
             task.retry_count = 0
 
@@ -77,6 +80,8 @@ class DownloadAdminService:
         if task.status in {"pending", "retry_wait"}:
             task.status = "cancelled"
             task.finished_at = datetime.utcnow()
+            task.locked_by = None
+            task.lock_expire_at = None
         if reason:
             task.error_message = reason
 

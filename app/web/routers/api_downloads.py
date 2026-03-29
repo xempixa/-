@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +18,7 @@ router = APIRouter()
 async def list_downloads_api(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: str | None = Query(None),
+    status: Literal["pending", "running", "retry_wait", "success", "failed", "cancelled", "skipped"] | None = Query(None),
     bvid: str | None = Query(None),
     uid: int | None = Query(None),
     session: AsyncSession = Depends(get_db_session),

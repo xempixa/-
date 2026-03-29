@@ -32,6 +32,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_stack.ps1
 # 健康检查
 powershell -ExecutionPolicy Bypass -File .\scripts\healthcheck.ps1
 
+# 最小验收
+powershell -ExecutionPolicy Bypass -File .\scripts\acceptance_smoke.ps1
+
 # 停止整套服务
 powershell -ExecutionPolicy Bypass -File .\scripts\stop_stack.ps1
 ```
