@@ -8,8 +8,11 @@ from app.auth.login import interactive_login
 from app.auth.state import storage_state_exists
 from app.db.init_db import init_db
 from app.logging import setup_logging
+from app.services.batch_sync import run_batch_sync
 from app.services.download_videos import download_video_by_bvid
 from app.services.enqueue_video_download import enqueue_video_download
+from app.services.export_reports import export_all_reports
+from app.services.healthcheck import run_healthcheck
 from app.services.run_download_queue import run_download_queue
 from app.services.sync_comment_replies import sync_comment_replies
 from app.services.sync_comments import sync_comments
@@ -129,6 +132,28 @@ def cli_run_download_queue(
 ) -> None:
     asyncio.run(run_download_queue(batch_size=batch_size))
     print("[green]下载队列执行完成[/green]")
+
+
+@app.command("batch-sync")
+def cli_batch_sync() -> None:
+    asyncio.run(run_batch_sync())
+    print("[green]批量同步完成[/green]")
+
+
+@app.command("export-reports")
+def cli_export_reports(
+    report_dir: str = typer.Option("./reports", help="报表输出目录"),
+) -> None:
+    outputs = asyncio.run(export_all_reports(report_dir=report_dir))
+    for k, v in outputs.items():
+        print(f"[green]{k}[/green]: {v}")
+
+
+@app.command("healthcheck")
+def cli_healthcheck() -> None:
+    result = asyncio.run(run_healthcheck())
+    for k, v in result.items():
+        print(f"{k}: {v}")
 
 
 @app.command("export-cookies")

@@ -60,6 +60,17 @@ class BiliApiClient:
         logger.info(f"请求评论 dynamic_id={dynamic_id}, page={page}, root={root}")
         return await self.get_json(url, params=params)
 
+
+
+    async def get_creator_videos(self, host_uid: int, page: int = 1, page_size: int = 30) -> dict[str, Any]:
+        """
+        TODO: 根据你自己的抓包结果替换 endpoint/query 参数/鉴权检查。
+        """
+        url = f"{settings.bili_api_base}/x/placeholder/video/list"
+        params = {"host_uid": host_uid, "page": page, "page_size": page_size}
+        logger.info(f"请求创作者视频列表 host_uid={host_uid}, page={page}")
+        return await self.get_json(url, params=params)
+
     async def get_video_detail(self, bvid: str) -> dict[str, Any]:
         """
         TODO: 根据你自己的抓包结果替换 endpoint/query 参数/鉴权检查。

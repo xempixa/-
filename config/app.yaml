@@ -1,0 +1,18 @@
+download:
+  worker_batch_size: 3
+  max_parallel_downloads: 1
+  default_priority: 100
+
+retry:
+  enabled: true
+  base_delay_seconds: 300
+  max_delay_seconds: 86400
+  jitter_seconds: 60
+
+export:
+  report_dir: ./reports
+  include_raw_json: false
+
+runtime:
+  single_instance_lock: true
+  save_run_log: true

@@ -23,6 +23,8 @@ async def download_video(
         settings.yt_dlp_bin,
         "-o",
         output_tpl,
+        "--print",
+        "after_move:filepath",
         "--newline",
         "--no-progress",
         url,
@@ -34,11 +36,22 @@ async def download_video(
         cmd.extend(["--cookies-from-browser", "chrome"])
 
     logger.info(f"执行下载命令: {' '.join(cmd)}")
-    process = await asyncio.create_subprocess_exec(*cmd)
-    code = await process.wait()
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    stdout, stderr = await process.communicate()
+    code = process.returncode
 
     if code != 0:
-        logger.error(f"yt-dlp 下载失败，退出码={code}")
+        logger.error(f"yt-dlp 下载失败，退出码={code} stderr={stderr.decode('utf-8', errors='ignore')}")
 
-    # TODO: 第二轮可用 --print after_move:filepath 解析真实落盘路径。
-    return code, None
+    file_path: str | None = None
+    if stdout:
+        lines = [line.strip() for line in stdout.decode("utf-8", errors="ignore").splitlines() if line.strip()]
+        if lines:
+            file_path = lines[-1]
+
+    return code, file_path
