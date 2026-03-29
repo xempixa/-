@@ -21,22 +21,22 @@
 
 ```powershell
 # 初始化
-powershell -ExecutionPolicy Bypass -File .\scripts\init_local.ps1
+powershell -File .\scripts\init_local.ps1
 
 # 登录（人工）
 .\.venv\Scripts\bili-archiver.exe login
 
 # 启动整套服务（Web + Worker + Scheduler）
-powershell -ExecutionPolicy Bypass -File .\scripts\run_stack.ps1
+powershell -File .\scripts\run_stack.ps1
 
 # 健康检查
-powershell -ExecutionPolicy Bypass -File .\scripts\healthcheck.ps1
+powershell -File .\scripts\healthcheck.ps1
 
 # 最小验收
-powershell -ExecutionPolicy Bypass -File .\scripts\acceptance_smoke.ps1
+powershell -File .\scripts\acceptance_smoke.ps1
 
 # 停止整套服务
-powershell -ExecutionPolicy Bypass -File .\scripts\stop_stack.ps1
+powershell -File .\scripts\stop_stack.ps1
 ```
 
 ## 目录说明

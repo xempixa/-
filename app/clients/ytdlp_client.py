@@ -35,7 +35,8 @@ async def download_video(
     else:
         cmd.extend(["--cookies-from-browser", "chrome"])
 
-    logger.info(f"执行下载命令: {' '.join(cmd)}")
+    safe_cmd = [x if x not in {str(cookies_file)} else '<cookies-file>' for x in cmd]
+    logger.info(f"执行下载命令: {' '.join(safe_cmd)}")
     process = await asyncio.create_subprocess_exec(
         *cmd,
         stdout=asyncio.subprocess.PIPE,

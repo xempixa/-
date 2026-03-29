@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 
@@ -8,12 +9,22 @@ class SingleInstanceLock:
         self.path = Path(path)
 
     def acquire(self) -> bool:
-        if self.path.exists():
-            return False
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text("locked", encoding="utf-8")
+        try:
+            fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            return False
+
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(str(os.getpid()))
+        except Exception:
+            try:
+                self.path.unlink(missing_ok=True)
+            finally:
+                raise
+
         return True
 
     def release(self) -> None:
-        if self.path.exists():
-            self.path.unlink()
+        self.path.unlink(missing_ok=True)

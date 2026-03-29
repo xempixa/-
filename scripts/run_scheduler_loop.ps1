@@ -3,6 +3,9 @@ Set-Location $PSScriptRoot\..
 
 $lockPath = ".\data\locks\scheduler.lock"
 $stopPath = ".\data\locks\scheduler.stop"
+$maxConsecutiveFailures = 10
+$consecutiveFailures = 0
+
 New-Item -ItemType Directory -Path ".\data\locks" -Force | Out-Null
 
 if (Test-Path $stopPath) { Remove-Item $stopPath -Force }
@@ -18,8 +21,23 @@ if (Test-Path $lockPath) {
 Set-Content -Path $lockPath -Value $PID -Encoding UTF8
 try {
     while (-not (Test-Path $stopPath)) {
-        .venv\Scripts\bili-archiver.exe run-scheduler-once
-        Start-Sleep -Seconds 300
+        try {
+            .venv\Scripts\bili-archiver.exe run-scheduler-once
+            if ($LASTEXITCODE -ne 0) {
+                throw "run-scheduler-once exit code=$LASTEXITCODE"
+            }
+            $consecutiveFailures = 0
+            Start-Sleep -Seconds 300
+        }
+        catch {
+            $consecutiveFailures += 1
+            Write-Warning "scheduler loop 执行失败($consecutiveFailures/$maxConsecutiveFailures): $($_.Exception.Message)"
+            if ($consecutiveFailures -ge $maxConsecutiveFailures) {
+                Write-Error "scheduler loop 连续失败次数过多，主动退出避免失控循环"
+                break
+            }
+            Start-Sleep -Seconds 120
+        }
     }
 }
 finally {

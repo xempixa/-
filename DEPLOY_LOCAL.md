@@ -9,7 +9,7 @@
 1. **克隆并进入仓库**
 2. **执行初始化脚本**
    ```powershell
-   powershell -ExecutionPolicy Bypass -File .\scripts\init_local.ps1
+   powershell -File .\scripts\init_local.ps1
    ```
 3. **补充 .env 配置**（如 UA、路径）
 4. **登录并生成 storage_state**
@@ -18,11 +18,11 @@
    ```
 5. **启动整套服务**
    ```powershell
-   powershell -ExecutionPolicy Bypass -File .\scripts\run_stack.ps1
+   powershell -File .\scripts\run_stack.ps1
    ```
 6. **执行健康检查**
    ```powershell
-   powershell -ExecutionPolicy Bypass -File .\scripts\healthcheck.ps1
+   powershell -File .\scripts\healthcheck.ps1
    ```
 
 ## OpenClaw 前置条件
@@ -45,7 +45,7 @@ git branch -D deployment-prep
 ### 运行态回滚
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\stop_stack.ps1
+powershell -File .\scripts\stop_stack.ps1
 ```
 
 ### 数据回滚（本地）
