@@ -82,7 +82,7 @@ class BiliApiClient:
             ),
             "web_location": "333.1387",
         }
-        if offset:
+        if offset is not None:
             params["offset"] = offset
 
         logger.info(f"请求动态列表 host_uid={host_uid}, offset={offset}")
