@@ -85,6 +85,9 @@ class DownloadTask(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    manual_retry_count: Mapped[int] = mapped_column(Integer, default=0)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class SyncCheckpoint(Base):

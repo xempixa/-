@@ -1,6 +1,7 @@
 import asyncio
 
 import typer
+import uvicorn
 from rich import print
 
 from app.auth.export_cookies import export_netscape_cookies
@@ -160,6 +161,21 @@ def cli_healthcheck() -> None:
 def cli_export_cookies() -> None:
     path = export_netscape_cookies()
     print(f"[green]cookies 已导出: {path}[/green]")
+
+
+@app.command("serve-web")
+def cli_serve_web(
+    host: str = typer.Option("127.0.0.1", help="监听地址"),
+    port: int = typer.Option(8000, help="端口"),
+    reload: bool = typer.Option(False, help="开发热重载"),
+) -> None:
+    uvicorn.run(
+        "app.web.app_factory:create_web_app",
+        host=host,
+        port=port,
+        reload=reload,
+        factory=True,
+    )
 
 
 if __name__ == "__main__":
