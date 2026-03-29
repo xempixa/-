@@ -59,7 +59,7 @@ class BiliApiClient:
         if isinstance(data, dict):
             payload = data.get("data") or {}
             voucher = payload.get("v_voucher")
-            if voucher and not payload.get("replies"):
+            if voucher:
                 logger.warning("WBI 签名疑似失效，尝试刷新 keys 后重试一次")
                 img_key, sub_key = await self._refresh_wbi_keys()
                 signed_params = sign_wbi_params(params=params, img_key=img_key, sub_key=sub_key)
@@ -69,7 +69,7 @@ class BiliApiClient:
 
     async def get_dynamic_list(self, host_uid: int, offset: str | None = None) -> dict[str, Any]:
         url = f"{settings.bili_api_base}/x/polymer/web-dynamic/v1/feed/space"
-        params = {
+        params: dict[str, Any] = {
             "host_mid": host_uid,
             "timezone_offset": -480,
             "platform": "web",
@@ -90,71 +90,46 @@ class BiliApiClient:
 
     async def get_comment_main(
         self,
-        oid: str,
-        reply_type: int = 11,
+        comment_oid: str,
+        comment_type: int,
         offset: str = "",
     ) -> dict[str, Any]:
         url = f"{settings.bili_api_base}/x/v2/reply/wbi/main"
-        params = {
-            "oid": oid,
-            "type": reply_type,
+        params: dict[str, Any] = {
+            "oid": comment_oid,
+            "type": comment_type,
             "mode": 3,
             "pagination_str": orjson.dumps({"offset": offset}).decode(),
             "plat": 1,
             "seek_rpid": "",
             "web_location": "1315875",
         }
-        logger.info(f"请求一级评论 oid={oid}, type={reply_type}, offset={offset}")
+        logger.info(
+            f"请求一级评论 comment_oid={comment_oid}, comment_type={comment_type}, offset={offset}"
+        )
         return await self.get_json_wbi(url, params)
 
     async def get_comment_replies(
         self,
-        oid: str,
+        comment_oid: str,
+        comment_type: int,
         root: str,
-        reply_type: int = 11,
         pn: int = 1,
         ps: int = 10,
     ) -> dict[str, Any]:
         url = f"{settings.bili_api_base}/x/v2/reply/reply"
-        params = {
-            "oid": oid,
-            "type": reply_type,
+        params: dict[str, Any] = {
+            "oid": comment_oid,
+            "type": comment_type,
             "root": root,
             "ps": ps,
             "pn": pn,
             "web_location": "333.1387",
         }
-        logger.info(f"请求二级评论 oid={oid}, root={root}, pn={pn}, ps={ps}")
-        return await self.get_json(url, params)
-
-    async def get_dynamic_comments(
-        self,
-        dynamic_id: str,
-        page: int = 1,
-        page_size: int = 20,
-        root: str | None = None,
-    ) -> dict[str, Any]:
-        """
-        TODO: 动态 dynamic_id 到评论 oid/type 的映射关系需结合真实抓包确认。
-        当前先沿用 dynamic_id 直传为 oid，避免伪造映射规则。
-        """
-        if root:
-            return await self.get_comment_replies(
-                oid=dynamic_id,
-                root=root,
-                reply_type=11,
-                pn=page,
-                ps=page_size,
-            )
-
-        if page > 1:
-            logger.warning("一级评论接口使用 offset 游标分页，page>1 需要调用方传入真实 offset")
-
-        return await self.get_comment_main(
-            oid=dynamic_id,
-            reply_type=11,
-            offset="",
+        logger.info(
+            f"请求二级评论 comment_oid={comment_oid}, comment_type={comment_type}, root={root}, pn={pn}, ps={ps}"
         )
+        return await self.get_json(url, params)
 
     async def get_creator_videos(
         self,
@@ -164,7 +139,7 @@ class BiliApiClient:
         charging_only: bool = False,
     ) -> dict[str, Any]:
         url = f"{settings.bili_api_base}/x/space/wbi/arc/search"
-        params = {
+        params: dict[str, Any] = {
             "mid": host_uid,
             "pn": page,
             "ps": page_size,
@@ -181,12 +156,6 @@ class BiliApiClient:
             f"请求创作者视频列表 host_uid={host_uid}, page={page}, charging_only={charging_only}"
         )
         return await self.get_json_wbi(url, params)
-
-    async def get_video_detail(self, bvid: str) -> dict[str, Any]:
-        url = f"{settings.bili_api_base}/x/web-interface/view"
-        params = {"bvid": bvid}
-        logger.info(f"请求视频详情 bvid={bvid}")
-        return await self.get_json(url, params)
 
     @staticmethod
     def dumps(data: dict[str, Any]) -> str:
