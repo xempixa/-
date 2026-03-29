@@ -10,40 +10,33 @@ from app.db.models import Dynamic
 from app.db.session import AsyncSessionLocal
 
 
-def _extract_dynamic_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    if isinstance(payload.get("items"), list):
-        return payload["items"]
-
+def _extract_page_data(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None, bool]:
     data = payload.get("data")
-    if isinstance(data, dict) and isinstance(data.get("items"), list):
-        return data["items"]
+    if not isinstance(data, dict):
+        return [], None, False
 
-    return []
+    items = data.get("items")
+    page_items = items if isinstance(items, list) else []
 
+    next_offset = data.get("offset")
+    page_offset = str(next_offset) if next_offset is not None else None
 
-def _extract_next_offset(payload: dict[str, Any]) -> str | None:
-    offset = payload.get("next_offset")
-    if offset is not None:
-        return str(offset)
-
-    data = payload.get("data")
-    if isinstance(data, dict) and data.get("offset") is not None:
-        return str(data.get("offset"))
-
-    return None
+    has_more = bool(data.get("has_more"))
+    return page_items, page_offset, has_more
 
 
 async def sync_dynamics(host_uid: int, limit_pages: int = 1) -> None:
     client = BiliApiClient()
-    offset: str | None = None
+    offset: str | None = ""
 
     try:
         async with AsyncSessionLocal() as session:
             for page_no in range(1, limit_pages + 1):
                 data = await client.get_dynamic_list(host_uid=host_uid, offset=offset)
-
-                items = _extract_dynamic_items(data)
-                logger.info(f"第 {page_no} 页动态数量: {len(items)}")
+                items, next_offset, has_more = _extract_page_data(data)
+                logger.info(
+                    f"第 {page_no} 页动态数量: {len(items)}, has_more={has_more}, next_offset={next_offset}"
+                )
 
                 for item in items:
                     dynamic_id = str(item.get("id_str") or "")
@@ -105,9 +98,12 @@ async def sync_dynamics(host_uid: int, limit_pages: int = 1) -> None:
                         )
 
                 await session.commit()
-                offset = _extract_next_offset(data)
-                if not offset:
+                if not has_more:
                     break
+                if not next_offset:
+                    logger.warning("has_more=true 但 data.offset 为空，提前结束以避免重复翻页")
+                    break
+                offset = next_offset
     except Exception as exc:
         logger.exception(f"同步动态失败: {exc}")
         raise
