@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.web.deps import get_db_session, get_download_admin_service, get_query_service
@@ -69,8 +69,8 @@ async def enqueue_download_api(
 
 @router.post("/downloads/{task_id}/retry", response_model=ApiResponse)
 async def retry_download_api(
-    task_id: int,
     payload: RetryDownloadRequest,
+    task_id: int = Path(..., ge=1),
     session: AsyncSession = Depends(get_db_session),
     service: DownloadAdminService = Depends(get_download_admin_service),
 ) -> ApiResponse:
@@ -80,8 +80,8 @@ async def retry_download_api(
 
 @router.post("/downloads/{task_id}/cancel", response_model=ApiResponse)
 async def cancel_download_api(
-    task_id: int,
     payload: CancelDownloadRequest,
+    task_id: int = Path(..., ge=1),
     session: AsyncSession = Depends(get_db_session),
     service: DownloadAdminService = Depends(get_download_admin_service),
 ) -> ApiResponse:

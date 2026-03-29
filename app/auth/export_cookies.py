@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from app.config import settings
@@ -36,4 +37,10 @@ def export_netscape_cookies(
         lines.append("\t".join([domain, include_subdomain, path, secure, expires, name, value]))
 
     output.write_text("\n".join(lines), encoding="utf-8", newline="\n")
+
+    try:
+        os.chmod(output, 0o600)
+    except OSError:
+        pass
+
     return output

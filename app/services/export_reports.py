@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import select
 
@@ -10,8 +11,23 @@ from app.utils.csv_export import export_csv
 from app.utils.json_export import export_json
 
 
+def _resolve_report_dir(report_dir: str) -> Path:
+    candidate = Path(report_dir).expanduser()
+    if not candidate.is_absolute():
+        candidate = Path.cwd() / candidate
+
+    target = candidate.resolve()
+    project_root = Path.cwd().resolve()
+
+    if project_root != target and project_root not in target.parents:
+        raise ValueError(f"report_dir must be inside project directory: {project_root}")
+
+    return target
+
+
 async def export_all_reports(report_dir: str = "./reports") -> dict[str, str]:
     ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    target_dir = _resolve_report_dir(report_dir)
 
     async with AsyncSessionLocal() as session:
         dynamics = list((await session.scalars(select(Dynamic))).all())
@@ -74,11 +90,11 @@ async def export_all_reports(report_dir: str = "./reports") -> dict[str, str]:
     ]
 
     outputs = {
-        "dynamics_csv": str(export_csv(dynamic_rows, f"{report_dir}/dynamics_{ts}.csv")),
-        "comments_csv": str(export_csv(comment_rows, f"{report_dir}/comments_{ts}.csv")),
-        "videos_csv": str(export_csv(video_rows, f"{report_dir}/videos_{ts}.csv")),
-        "tasks_csv": str(export_csv(task_rows, f"{report_dir}/download_tasks_{ts}.csv")),
-        "videos_json": str(export_json(video_rows, f"{report_dir}/videos_{ts}.json")),
+        "dynamics_csv": str(export_csv(dynamic_rows, str(target_dir / f"dynamics_{ts}.csv"))),
+        "comments_csv": str(export_csv(comment_rows, str(target_dir / f"comments_{ts}.csv"))),
+        "videos_csv": str(export_csv(video_rows, str(target_dir / f"videos_{ts}.csv"))),
+        "tasks_csv": str(export_csv(task_rows, str(target_dir / f"download_tasks_{ts}.csv"))),
+        "videos_json": str(export_json(video_rows, str(target_dir / f"videos_{ts}.json"))),
     }
 
     return outputs
