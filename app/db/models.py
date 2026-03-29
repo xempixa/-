@@ -24,6 +24,8 @@ class Dynamic(Base):
     dynamic_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
     publish_ts: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     content_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    comment_oid: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    comment_type: Mapped[int | None] = mapped_column(Integer, nullable=True)
     raw_json: Mapped[str] = mapped_column(Text)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
