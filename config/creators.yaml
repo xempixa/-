@@ -1,0 +1,18 @@
+creators:
+  - uid: 123456
+    name: creator_a
+    enabled: true
+    sync_dynamics: true
+    sync_videos: true
+    sync_comments: false
+    dynamic_pages: 2
+    video_pages: 2
+
+  - uid: 456789
+    name: creator_b
+    enabled: true
+    sync_dynamics: true
+    sync_videos: false
+    sync_comments: false
+    dynamic_pages: 1
+    video_pages: 0
