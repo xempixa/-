@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.crud_download import create_download_task
+from app.utils.bvid import is_valid_bvid, normalize_bvid
 from app.db.models import DownloadTask
 
 
@@ -18,6 +19,10 @@ class DownloadAdminService:
         source_uid: int | None = None,
         note: str | None = None,
     ) -> tuple[bool, str]:
+        bvid = normalize_bvid(bvid)
+        if not is_valid_bvid(bvid):
+            return False, "invalid bvid"
+
         existing = await session.scalar(
             select(DownloadTask).where(
                 DownloadTask.bvid == bvid,

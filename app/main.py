@@ -15,11 +15,13 @@ from app.services.enqueue_video_download import enqueue_video_download
 from app.services.export_reports import export_all_reports
 from app.services.healthcheck import run_healthcheck
 from app.services.run_download_queue import run_download_queue
+from app.services.scheduler_tasks import run_scheduler_tasks
 from app.services.sync_comment_replies import sync_comment_replies
 from app.services.sync_comments import sync_comments
 from app.services.sync_creator_feed import sync_creator_feed
 from app.services.sync_dynamics import sync_dynamics
 from app.services.sync_videos import sync_video
+from app.utils.bvid import is_valid_bvid, normalize_bvid
 from app.utils.paths import ensure_dirs
 
 app = typer.Typer(help="Bilibili personal charge content archiver")
@@ -29,6 +31,13 @@ app = typer.Typer(help="Bilibili personal charge content archiver")
 def main() -> None:
     setup_logging()
     ensure_dirs()
+
+
+def _validate_bvid(bvid: str) -> str:
+    value = normalize_bvid(bvid)
+    if not is_valid_bvid(value):
+        raise typer.BadParameter("bvid 格式无效，示例: BV1xx411c7mD")
+    return value
 
 
 @app.command("init-db")
@@ -75,7 +84,7 @@ def cli_sync_comments(
 def cli_sync_video(
     bvid: str = typer.Option(..., help="视频 BVID"),
 ) -> None:
-    asyncio.run(sync_video(bvid=bvid))
+    asyncio.run(sync_video(bvid=_validate_bvid(bvid)))
     print("[green]视频元数据同步完成[/green]")
 
 
@@ -83,7 +92,7 @@ def cli_sync_video(
 def cli_download_video(
     bvid: str = typer.Option(..., help="视频 BVID"),
 ) -> None:
-    code = asyncio.run(download_video_by_bvid(bvid))
+    code = asyncio.run(download_video_by_bvid(_validate_bvid(bvid)))
     if code == 0:
         print("[green]视频下载完成[/green]")
     else:
@@ -120,7 +129,7 @@ def cli_enqueue_download(
     bvid: str = typer.Option(..., help="视频 BVID"),
     priority: int = typer.Option(100, help="优先级，越小越高"),
 ) -> None:
-    ok = asyncio.run(enqueue_video_download(bvid=bvid, priority=priority))
+    ok = asyncio.run(enqueue_video_download(bvid=_validate_bvid(bvid), priority=priority))
     if ok:
         print("[green]下载任务已入队[/green]")
     else:
@@ -134,6 +143,13 @@ def cli_run_download_queue(
     asyncio.run(run_download_queue(batch_size=batch_size))
     print("[green]下载队列执行完成[/green]")
 
+
+
+
+@app.command("run-scheduler-once")
+def cli_run_scheduler_once() -> None:
+    asyncio.run(run_scheduler_tasks())
+    print("[green]调度任务执行完成[/green]")
 
 @app.command("batch-sync")
 def cli_batch_sync() -> None:

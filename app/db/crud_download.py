@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import DownloadTask
@@ -41,12 +41,52 @@ async def get_runnable_tasks(session: AsyncSession, limit: int = 5) -> list[Down
                     DownloadTask.next_retry_at.is_not(None),
                     DownloadTask.next_retry_at <= now,
                 ),
-            )
+            ),
+            or_(
+                DownloadTask.lock_expire_at.is_(None),
+                DownloadTask.lock_expire_at <= now,
+            ),
         )
         .order_by(DownloadTask.priority.asc(), DownloadTask.created_at.asc())
         .limit(limit)
     )
     return list(result.all())
+
+
+async def try_claim_task(
+    session: AsyncSession,
+    task_id: int,
+    worker_id: str,
+    lock_ttl_seconds: int = 600,
+) -> bool:
+    now = datetime.utcnow()
+    lock_expire_at = now + timedelta(seconds=lock_ttl_seconds)
+    result = await session.execute(
+        update(DownloadTask)
+        .where(
+            DownloadTask.id == task_id,
+            or_(
+                DownloadTask.status == "pending",
+                and_(
+                    DownloadTask.status == "retry_wait",
+                    DownloadTask.next_retry_at.is_not(None),
+                    DownloadTask.next_retry_at <= now,
+                ),
+            ),
+            or_(
+                DownloadTask.lock_expire_at.is_(None),
+                DownloadTask.lock_expire_at <= now,
+            ),
+        )
+        .values(
+            status="running",
+            last_run_at=now,
+            updated_at=now,
+            locked_by=worker_id,
+            lock_expire_at=lock_expire_at,
+        )
+    )
+    return result.rowcount == 1
 
 
 async def mark_task_running(
