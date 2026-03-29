@@ -9,8 +9,8 @@ from app.clients.ytdlp_client import download_video
 from app.db.crud_download import (
     get_runnable_tasks,
     mark_task_retry,
-    mark_task_running,
     mark_task_success,
+    try_claim_task,
 )
 from app.db.crud_runlog import create_run_log, finish_run_log
 from app.db.session import AsyncSessionLocal
@@ -51,9 +51,13 @@ async def run_download_worker(batch_size: int = 3) -> None:
 
         for task in tasks:
             try:
-                await mark_task_running(session, task, worker_id=worker_id)
+                claimed = await try_claim_task(session, task.id, worker_id=worker_id)
                 await session.commit()
+                if not claimed:
+                    logger.info(f"[{worker_id}] 任务已被其他 worker 领取，跳过 task_id={task.id}")
+                    continue
 
+                await session.refresh(task)
                 logger.info(f"[{worker_id}] 开始下载 bvid={task.bvid}")
                 code, file_path = await download_video(task.url, cookies_file=cookies_file)
 
